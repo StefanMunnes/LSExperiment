@@ -1,0 +1,20 @@
+Package: LSExperiment
+Title: Author Factorial Survey Experiments for LimeSurvey with LimeSeed
+Version: 0.0.1
+Authors@R: 
+    person("Stefan", "Munnes", , "stefan.munnes@wzb.eu", role = c("aut", "cre"))
+Description: Create and edit factorial survey experiments for LimeSurvey using a YAML file that contains all dimensions and levels. This package uses this structured information to automatically populate your LimeSeed. Additional preview and export functions are available.
+License: MIT + file LICENSE
+Imports:
+    dplyr,
+    glue,
+    jsonlite,
+    purrr,
+    stringr,
+    tidyr
+Suggests:
+    LimeSeed,
+    yaml
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

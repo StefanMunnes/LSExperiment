@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  <style>{{CSS}}</style>
+</head>
+
+<body class="no-variable-highlights no-variable-labels">
+  <div class="page-shell">
+    <div class="container">
+      <header class="header">
+        <div>
+          <p class="eyebrow">LSExperiment Preview</p>
+          <h1>{{TITLE}}</h1>
+        </div>
+        <p class="intro">Interactive preview of survey vignettes with live deck selection.</p>
+      </header>
+
+      <section class="controls" aria-label="Preview controls">
+        <div class="info-badge">{{INFO_BADGE}}</div>
+        <div class="control-group">
+          <label for="deck-select">Deck</label>
+          <select id="deck-select">{{DECK_OPTIONS}}</select>
+        </div>
+        {{LANG_CONTROL}}
+        <div class="control-group control-group-wide">
+          <label for="width-range">Card width</label>
+          <input id="width-range" class="range-input" type="range" min="1" max="3" step="1" value="2">
+          <div class="range-caption">
+            <span>Overview</span>
+            <strong id="width-mode-label">Balanced</strong>
+            <span>Reading</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="toggle-highlights" type="button">Show highlights</button>
+          <button class="btn" id="toggle-labels" type="button">Show factor labels</button>
+          <button class="btn btn-secondary" id="print-preview" type="button">Print preview</button>
+        </div>
+      </section>
+
+      <section id="vignettes-container" class="vignettes-grid" aria-live="polite"></section>
+    </div>
+  </div>
+
+  <script>
+    const vignetteData = {{ VIGNETTE_JSON }};
+    const hasMultipleLanguages = {{ HAS_MULTIPLE_LANGUAGES }};
+    const defaultLanguage = {{ DEFAULT_LANGUAGE }};
+  </script>
+  <script>
+    { { JS } }
+  </script>
+</body>
+
+</html>

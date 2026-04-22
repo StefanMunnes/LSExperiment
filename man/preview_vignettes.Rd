@@ -33,6 +33,5 @@ Creates a self-contained HTML page where users can:
 \item select a deck number to see a live preview
 \item switch between languages
 \item inspect highlighted factor levels
-\item inspect the labelled design table
 }
 }

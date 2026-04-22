@@ -1,0 +1,369 @@
+:root {
+  --bg-top: #eef5ef;
+  --bg-bottom: #fbf8f0;
+  --panel: rgba(255, 255, 255, 0.94);
+  --panel-strong: #ffffff;
+  --line: #d6ddd2;
+  --line-strong: #bcc8bb;
+  --text: #203126;
+  --muted: #5d6f63;
+  --accent: #2f6b4f;
+  --accent-soft: #e6f1ea;
+  --highlight: #fae4a8;
+  --shadow: 0 16px 36px rgba(31, 50, 39, 0.08);
+  --vignette-min-width: 360px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(190, 224, 204, 0.55), transparent 32%),
+    radial-gradient(circle at top right, rgba(244, 225, 196, 0.45), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(214, 231, 255, 0.35), transparent 30%),
+    linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+}
+
+body.no-variable-highlights .variable-highlight {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font-weight: inherit;
+  box-shadow: none;
+}
+
+body.no-variable-labels .variables-section {
+  display: none;
+}
+
+.page-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.header,
+.controls,
+.vignette-card {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.1;
+}
+
+.intro {
+  margin: 0;
+  max-width: 420px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: end;
+  border-radius: 18px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.control-group-wide {
+  min-width: 220px;
+}
+
+.control-group label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+select,
+.range-input,
+.btn {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  font: inherit;
+}
+
+select {
+  padding: 10px 14px;
+  background: var(--panel-strong);
+  color: var(--text);
+}
+
+.range-input {
+  min-height: auto;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dce9df, #bfd7c6);
+  appearance: none;
+}
+
+.range-input::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(47, 107, 79, 0.22);
+  appearance: none;
+}
+
+.range-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(47, 107, 79, 0.22);
+}
+
+.range-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.range-caption strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+select:focus,
+.btn:focus {
+  outline: 2px solid rgba(47, 107, 79, 0.18);
+  outline-offset: 2px;
+}
+
+.info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.info-separator {
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.btn {
+  padding: 10px 14px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #ffffff;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(47, 107, 79, 0.16);
+}
+
+.btn.btn-secondary {
+  background: var(--panel-strong);
+  color: var(--text);
+}
+
+.vignettes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--vignette-min-width)), 1fr));
+  gap: 18px;
+}
+
+.vignette-card {
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.vignette-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.vignette-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.vignette-id {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.vignette-content {
+  line-height: 1.7;
+}
+
+.vignette-content p:first-child {
+  margin-top: 0;
+}
+
+.variable-highlight {
+  padding: 0 4px;
+  border-radius: 6px;
+  background: var(--highlight);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+.variables-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.variables-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.variable-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.variable-chip {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f4f7f3;
+  border: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+
+.variable-chip strong {
+  color: var(--accent);
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .page-shell {
+    padding: 0;
+  }
+
+  .controls {
+    display: none;
+  }
+
+  .vignette-card,
+  .header {
+    box-shadow: none;
+    border: 1px solid #d9d9d9;
+    backdrop-filter: none;
+  }
+
+  .vignette-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+@media (max-width: 860px) {
+  .header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .actions {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-shell {
+    padding: 14px;
+  }
+
+  .controls,
+  .header,
+  .vignette-card {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .actions,
+  .info-badge {
+    width: 100%;
+  }
+
+  .actions .btn {
+    flex: 1 1 180px;
+  }
+}

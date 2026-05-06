@@ -11,7 +11,7 @@ prepare_vignettes_single_lang(
   vig_n = NULL,
   lang = NULL,
   prefix = "vig",
-  names = NULL,
+  covariables = NULL,
   store_design_data = TRUE
 )
 }

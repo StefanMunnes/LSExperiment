@@ -64,6 +64,53 @@ vig <- build_vignette_data(
 preview_vignettes(vig, "jobvig-preview.html")
 ```
 
+## Dependent covariables
+
+Use `covariables` for attributes that depend on one or more factor values, such
+as names, exact ages, tenure, or departments.
+
+```r
+covariables <- list(
+  name = list(
+    randomize = TRUE,
+    unique_within = "deck",
+    conditions = list(
+      list(
+        when = list(gender = 1, age = 1),
+        values = list(
+          en = c("Jack", "Joshua", "Thomas"),
+          de = c("Leon", "Lukas", "Jonas")
+        )
+      ),
+      list(
+        when = list(gender = 2, age = 2),
+        values = list(
+          en = c("Sarah", "Helen", "Claire"),
+          de = c("Sandra", "Katrin", "Claudia")
+        )
+      )
+    )
+  ),
+  specific_age = list(
+    conditions = list(
+      list(when = list(age = 1), values = c("24", "26", "28")),
+      list(when = list(age = 2), values = c("56", "58", "60"))
+    )
+  )
+)
+
+vig <- build_vignette_data(
+  factors = factors,
+  design_df = design_df,
+  text = "{name} is {specific_age} years old.",
+  covariables = covariables
+)
+```
+
+By default, values are randomized without replacement within each deck. If a
+deck would require duplicates for a matching rule, `build_vignette_data()`
+throws an error instead of silently reusing a value.
+
 ## LimeSeed integration
 
 `vignettes_to_seed()` expects a LimeSeed seed/list that already
@@ -78,8 +125,8 @@ contains the vignette groups and question shells. The function then:
 Typical usage:
 
 ```r
-seed <- LimeSeed::prime_seed("path/to/seed-folder")
-seed <- vignettes_to_seed(vig, seed, deckgroupsuffix = "intro")
+seed <- LimeSeed::load_seed("path/to/seed-folder")
+seed <- vignettes_to_seed(vig, seed)
 LimeSeed::seed_to_tsv(seed, "survey.tsv")
 ```
 
@@ -93,6 +140,4 @@ LimeSeed::seed_to_tsv(seed, "survey.tsv")
   multi-language projects.
 - Keep all generated vignette variables grouped under a consistent prefix such
   as `vigper` or `vigjob`.
-- Treat name randomization as experiment-specific logic. In the current code,
-  this part is still tailored to a gender/age-style setup and should be made
-  more generic before publishing to CRAN or reusing across many studies.
+- Use `covariables` for all dependent attributes, including person names.

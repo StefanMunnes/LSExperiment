@@ -11,7 +11,7 @@ build_vignette_data(
   lang = NULL,
   prefix = "vig",
   text = NULL,
-  names = NULL,
+  covariables = NULL,
   store_design_data = TRUE
 )
 }
@@ -29,7 +29,10 @@ factor variables coded as integers)}
 
 \item{text}{Optional named list of text templates by language}
 
-\item{names}{Optional nested list structure for person names}
+\item{covariables}{Optional named list of dependent vignette attributes.
+Each entry defines conditions over one or more factor variables and a value
+pool to assign. By default, values are randomized without replacement
+within each deck.}
 
 \item{store_design_data}{Logical, wheter to store labeled design data for preview}
 }
@@ -57,7 +60,7 @@ result <- build_vignette_data(
   factors = fct_per,
   design_df = design_sas,
   text = text_templates,
-  names = names_5,
+  covariables = covariables_per,
 )
 
 # Access structure:

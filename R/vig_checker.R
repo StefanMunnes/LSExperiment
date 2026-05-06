@@ -202,14 +202,14 @@ html_escape <- function(x) {
 
 #' @keywords internal
 resolve_preview_resource_dir <- function() {
-  package_dir <- system.file("preview", package = "LSExperiment")
-  if (nzchar(package_dir) && dir.exists(package_dir)) {
-    return(package_dir)
-  }
-
   local_dir <- file.path("inst", "preview")
   if (dir.exists(local_dir)) {
     return(local_dir)
+  }
+
+  package_dir <- system.file("preview", package = "LSExperiment")
+  if (nzchar(package_dir) && dir.exists(package_dir)) {
+    return(package_dir)
   }
 
   stop("Could not locate bundled preview resources.")

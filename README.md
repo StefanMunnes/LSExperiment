@@ -1,8 +1,8 @@
 # LSExperiment
 
 `LSExperiment` is an R package for building factorial survey experiments for
-LimeSurvey in a reproducible way. It complements `LimeSeed`: you keep the
-survey structure in a LimeSeed, and use `LSExperiment` to generate
+LimeSurvey in a reproducible way. It complements [LimeSeed](https://github.com/StefanMunnes/LimeSeed): you keep the
+survey structure in a so called Seed, and use `LSExperiment` to generate
 the vignette texts, hidden condition variables, deck randomization, and HTML
 previews from structured R objects or YAML-based factor definitions.
 
@@ -71,10 +71,6 @@ preview_vignettes(vig, "jobvig-preview.html")
 Use `covariables` for attributes that depend on one or more factor values, such
 as names, exact ages, tenure, or departments.
 
-`content` is the only input for `factors`, `text`, and optional
-`covariables`. It must be a named list or YAML file with exactly those
-top-level entries.
-
 The rule format is flat:
 - use named rules directly under each covariable
 - use factor variable names directly inside each rule
@@ -120,8 +116,7 @@ vig <- build_vignette_data(
 ```
 
 You can bundle `factors`, `text`, and `covariables` into one top-level
-config object or YAML file through `content`. `design` stays separate because
-it is tabular:
+config object or YAML file through `content`.
 
 ```r
 config <- list(
@@ -164,7 +159,7 @@ covariables:
         de: ["Sandra", "Katrin", "Claudia"]
 ```
 
-Then load it like this:
+Then use it like this:
 
 ```r
 vig <- build_vignette_data(

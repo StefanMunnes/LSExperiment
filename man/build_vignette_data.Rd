@@ -5,34 +5,28 @@
 \title{Build vignette data with automatic multi-language detection}
 \usage{
 build_vignette_data(
-  factors,
-  design_df = NULL,
+  design = NULL,
+  content,
   vig_n = NULL,
   lang = NULL,
   prefix = "vig",
-  text = NULL,
-  covariables = NULL,
   store_design_data = TRUE
 )
 }
 \arguments{
-\item{factors}{Named list of factor definitions with multilingual labels}
+\item{design}{Optional design matrix as a data frame or list. If \code{design}
+is a list, it must describe rows or columns including at least \code{deck} and
+\code{vig}.}
 
-\item{design_df}{Optional data frame with design matrix (columns: deck, vig,
-factor variables coded as integers)}
+\item{content}{Bundled input as a named list or YAML file path with
+top-level \code{factors}, \code{text}, and optional \code{covariables} entries. No other
+entries are allowed in \code{content}.}
 
-\item{vig_n}{Number of vignettes per deck (required if design_df is NULL)}
+\item{vig_n}{Number of vignettes per deck (required if \code{design} is NULL)}
 
 \item{lang}{Single language code or NULL for auto-detection of all languages}
 
 \item{prefix}{Prefix for vignette variable names (default: "vig")}
-
-\item{text}{Optional named list of text templates by language}
-
-\item{covariables}{Optional named list of dependent vignette attributes.
-Each entry defines conditions over one or more factor variables and a value
-pool to assign. By default, values are randomized without replacement
-within each deck.}
 
 \item{store_design_data}{Logical, wheter to store labeled design data for preview}
 }
@@ -57,10 +51,12 @@ Build vignette data with automatic multi-language detection
 \dontrun{
 # Auto-detect all languages
 result <- build_vignette_data(
-  factors = fct_per,
-  design_df = design_sas,
-  text = text_templates,
-  covariables = covariables_per,
+  design = design_sas,
+  content = list(
+    factors = fct_per,
+    text = text_templates,
+    covariables = covariables_per
+  )
 )
 
 # Access structure:

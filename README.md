@@ -17,9 +17,9 @@ previews from structured R objects or YAML-based factor definitions.
 
 ## Workflow
 
-1. Define factors and text templates in YAML or as R lists.
-2. Provide a design table with at least `deck`, `vig`, and one numeric column 
+1. Provide a design table with at least `deck`, `vig`, and one numeric column 
    per factor.
+2. Define factors and text templates in YAML or as R lists.
 3. Run `build_vignette_data()` to generate a vignette object.
 4. Optionally inspect the result with `preview_vignettes()`.
 5. Add the vignette object to a LimeSeed seed with
@@ -30,6 +30,13 @@ previews from structured R objects or YAML-based factor definitions.
 
 ```r
 library(LSExperiment)
+
+design_df <- data.frame(
+  deck = c(1, 1, 2, 2),
+  vig = c(1, 2, 1, 2),
+  gender = c(1, 2, 2, 1),
+  contract = c(1, 2, 1, 2)
+)
 
 factors <- list(
   gender = list(
@@ -42,23 +49,18 @@ factors <- list(
   )
 )
 
-design_df <- data.frame(
-  deck = c(1, 1, 2, 2),
-  vig = c(1, 2, 1, 2),
-  gender = c(1, 2, 2, 1),
-  contract = c(1, 2, 1, 2)
-)
-
 text <- list(
   en = "{if(gender == 'female', 'She', 'He')} has a {contract}.",
   de = "{if(gender == 'female', 'Sie', 'Er')} hat einen {contract}."
 )
 
 vig <- build_vignette_data(
-  factors = factors,
-  design_df = design_df,
-  prefix = "jobvig",
-  text = text
+  design = design_df,
+  content = list(
+    factors = factors,
+    text = text
+  ),
+  prefix = "jobvig"
 )
 
 preview_vignettes(vig, "jobvig-preview.html")
@@ -69,47 +71,112 @@ preview_vignettes(vig, "jobvig-preview.html")
 Use `covariables` for attributes that depend on one or more factor values, such
 as names, exact ages, tenure, or departments.
 
+`content` is the only input for `factors`, `text`, and optional
+`covariables`. It must be a named list or YAML file with exactly those
+top-level entries.
+
+The rule format is flat:
+- use named rules directly under each covariable
+- use factor variable names directly inside each rule
+- use `pool` for the candidate values
+
+`randomize` defaults to `TRUE`, so you only need to set it when you want
+ordered, non-random assignment.
+
 ```r
 covariables <- list(
   name = list(
-    randomize = TRUE,
-    unique_within = "deck",
-    conditions = list(
-      list(
-        when = list(gender = 1, age = 1),
-        values = list(
-          en = c("Jack", "Joshua", "Thomas"),
-          de = c("Leon", "Lukas", "Jonas")
-        )
-      ),
-      list(
-        when = list(gender = 2, age = 2),
-        values = list(
-          en = c("Sarah", "Helen", "Claire"),
-          de = c("Sandra", "Katrin", "Claudia")
-        )
+    male_young = list(
+      gender = 1,
+      age = 1,
+      pool = list(
+        en = c("Jack", "Joshua", "Thomas"),
+        de = c("Leon", "Lukas", "Jonas")
+      )
+    ),
+    female_old = list(
+      gender = 2,
+      age = 2,
+      pool = list(
+        en = c("Sarah", "Helen", "Claire"),
+        de = c("Sandra", "Katrin", "Claudia")
       )
     )
   ),
   specific_age = list(
-    conditions = list(
-      list(when = list(age = 1), values = c("24", "26", "28")),
-      list(when = list(age = 2), values = c("56", "58", "60"))
-    )
+    younger = list(age = 1, pool = c("24", "26", "28")),
+    older = list(age = 2, pool = c("56", "58", "60"))
   )
 )
 
 vig <- build_vignette_data(
-  factors = factors,
-  design_df = design_df,
-  text = "{name} is {specific_age} years old.",
-  covariables = covariables
+  design = design_df,
+  content = list(
+    factors = factors,
+    text = "{name} is {specific_age} years old.",
+    covariables = covariables
+  )
 )
 ```
 
-By default, values are randomized without replacement within each deck. If a
-deck would require duplicates for a matching rule, `build_vignette_data()`
-throws an error instead of silently reusing a value.
+You can bundle `factors`, `text`, and `covariables` into one top-level
+config object or YAML file through `content`. `design` stays separate because
+it is tabular:
+
+```r
+config <- list(
+  factors = factors,
+  text = text,
+  covariables = covariables
+)
+
+vig <- build_vignette_data(
+  design = design_df,
+  content = config
+)
+```
+
+Equivalent YAML:
+
+```yaml
+factors:
+  gender:
+    1: male
+    2: female
+  age:
+    1: young
+    2: old
+text:
+  en: "{name} is {specific_age} years old."
+covariables:
+  name:
+    male_young:
+      gender: 1
+      age: 1
+      pool:
+        en: ["Jack", "Joshua", "Thomas"]
+        de: ["Leon", "Lukas", "Jonas"]
+    female_old:
+      gender: 2
+      age: 2
+      pool:
+        en: ["Sarah", "Helen", "Claire"]
+        de: ["Sandra", "Katrin", "Claudia"]
+```
+
+Then load it like this:
+
+```r
+vig <- build_vignette_data(
+  design = design_df,
+  content = "path/to/vig-config.yml"
+)
+```
+
+Values are randomized without replacement within each deck as long as the pool
+is large enough. If a deck needs more draws than available values, sampling
+automatically falls back to replacement, so two available values can also be
+used for four vignettes in the same deck.
 
 ## LimeSeed integration
 

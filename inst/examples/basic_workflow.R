@@ -24,10 +24,12 @@ text <- list(
 )
 
 vig <- build_vignette_data(
-  factors = factors,
-  design_df = design_df,
-  prefix = "jobvig",
-  text = text
+  design = design_df,
+  content = list(
+    factors = factors,
+    text = text
+  ),
+  prefix = "jobvig"
 )
 
 preview_vignettes(

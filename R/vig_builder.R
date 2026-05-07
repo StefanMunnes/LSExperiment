@@ -39,6 +39,93 @@ detect_languages <- function(factors) {
 }
 
 
+#' Normalize design input from data frame or list
+#'
+#' @keywords internal
+normalize_design <- function(design = NULL) {
+  if (is.null(design)) {
+    return(NULL)
+  }
+
+  if (is.data.frame(design)) {
+    return(design)
+  }
+
+  if (!is.list(design)) {
+    stop("'design' must be a data frame or list")
+  }
+
+  if (!is.null(base::names(design)) && all(c("deck", "vig") %in% base::names(design))) {
+    return(type.convert(as.data.frame(design, stringsAsFactors = FALSE), as.is = TRUE))
+  }
+
+  if (length(design) > 0 && all(vapply(design, is.list, logical(1)))) {
+    field_names <- unique(unlist(lapply(design, base::names), use.names = FALSE))
+    rows <- lapply(design, function(row) {
+      values <- setNames(vector("list", length(field_names)), field_names)
+      for (field in field_names) {
+        values[[field]] <- if (field %in% base::names(row)) row[[field]] else NA
+      }
+      as.data.frame(values, stringsAsFactors = FALSE)
+    })
+
+    return(type.convert(do.call(rbind, rows), as.is = TRUE))
+  }
+
+  stop("'design' must contain columns or rows including at least 'deck' and 'vig'")
+}
+
+
+#' Resolve build_vignette_data content inputs from explicit args or bundled content
+#'
+#' @keywords internal
+resolve_vignette_content <- function(content = NULL) {
+  config <- NULL
+
+  if (is.null(content)) {
+    stop("'content' must be provided as a readable YAML file path or a named list")
+  }
+
+  if (is.character(content) && length(content) == 1 && file.exists(content)) {
+    if (!requireNamespace("yaml", quietly = TRUE)) {
+      stop("Package 'yaml' is required to read YAML config files")
+    }
+    config <- yaml::read_yaml(content)
+  } else if (is.list(content) && !is.data.frame(content) &&
+             any(c("factors", "text", "covariables") %in% base::names(content))) {
+    config <- content
+  } else if (is.character(content) && length(content) == 1) {
+    stop("'content' must be a readable YAML file path or a named list")
+  } else {
+    stop("'content' must be a readable YAML file path or a named list")
+  }
+
+  allowed_keys <- c("factors", "text", "covariables")
+  extra_keys <- setdiff(base::names(config), allowed_keys)
+  if (length(extra_keys) > 0) {
+    stop(
+      "'content' may only contain: ",
+      paste(allowed_keys, collapse = ", "),
+      ". Unexpected entries: ",
+      paste(extra_keys, collapse = ", ")
+    )
+  }
+
+  if (!("factors" %in% base::names(config)) || is.null(config$factors)) {
+    stop("'content' must contain 'factors'")
+  }
+  if (!("text" %in% base::names(config)) || is.null(config$text)) {
+    stop("'content' must contain 'text'")
+  }
+
+  list(
+    factors = config$factors,
+    text = config$text,
+    covariables = config$covariables
+  )
+}
+
+
 #' Normalize dependent covariable definitions
 #'
 #' @keywords internal
@@ -56,29 +143,19 @@ normalize_covariables <- function(covariables = NULL) {
       stop("Each covariable rule for '", var_name, "' must be a list")
     }
 
-    if (!is.null(rule$when)) {
-      when <- rule$when
-    } else {
-      reserved <- c("values", "value", "labels")
-      when <- rule[setdiff(base::names(rule), reserved)]
-    }
-
-    value_keys <- intersect(c("values", "value", "labels"), base::names(rule))
-
-    if (length(value_keys) == 0) {
-      stop(
-        "Each covariable rule for '", var_name,
-        "' must define one of: values, value, labels"
-      )
-    }
+    when <- rule[setdiff(base::names(rule), "pool")]
 
     if (length(when) == 0 || is.null(base::names(when))) {
-      stop("Each covariable rule for '", var_name, "' must define at least one condition")
+      stop("Each covariable rule for '", var_name, "' must define at least one factor condition")
+    }
+
+    if (!("pool" %in% base::names(rule))) {
+      stop("Each covariable rule for '", var_name, "' must define 'pool'")
     }
 
     list(
       when = purrr::map_chr(when, as.character),
-      values = rule[[value_keys[[1]]]]
+      pool = rule[["pool"]]
     )
   }
 
@@ -86,25 +163,20 @@ normalize_covariables <- function(covariables = NULL) {
     if (!is.list(spec)) {
       stop("Each covariable definition must be a list. Problem in '", var_name, "'")
     }
-
-    if (is.null(base::names(spec)) || !("conditions" %in% base::names(spec))) {
-      conditions <- purrr::map(spec, normalize_covariable_rule, var_name = var_name)
-      return(list(
-        randomize = TRUE,
-        unique_within = "deck",
-        conditions = conditions
-      ))
+    if (is.null(base::names(spec))) {
+      stop("Each covariable definition must be a named list. Problem in '", var_name, "'")
     }
 
-    conditions <- purrr::map(
-      spec$conditions,
-      normalize_covariable_rule,
-      var_name = var_name
-    )
+    rule_names <- setdiff(base::names(spec), "randomize")
+    if (length(rule_names) == 0) {
+      stop("Covariable '", var_name, "' must define at least one named rule")
+    }
+
+    rules <- spec[rule_names]
+    conditions <- purrr::map(rules, normalize_covariable_rule, var_name = var_name)
 
     list(
       randomize = if (is.null(spec$randomize)) TRUE else isTRUE(spec$randomize),
-      unique_within = if (is.null(spec$unique_within)) "deck" else spec$unique_within,
       conditions = conditions
     )
   }
@@ -126,17 +198,10 @@ assign_covariables <- function(design_lab, design_keys, covariables, lang = NULL
       stop("Covariable rule has no values to assign")
     }
 
-    if (n_needed > length(pool)) {
-      stop(
-        "Not enough unique values for covariable assignment: need ", n_needed,
-        ", but only ", length(pool), " available. Add more values or reduce matches."
-      )
-    }
-
     if (randomize) {
-      sample(pool, size = n_needed, replace = FALSE)
+      sample(pool, size = n_needed, replace = length(pool) < n_needed)
     } else {
-      pool[seq_len(n_needed)]
+      rep(pool, length.out = n_needed)
     }
   }
 
@@ -144,19 +209,7 @@ assign_covariables <- function(design_lab, design_keys, covariables, lang = NULL
     spec <- covariables[[var_name]]
     assigned <- rep(FALSE, nrow(design_lab))
     output <- rep(NA_character_, nrow(design_lab))
-
-    group_ids <- if (is.null(spec$unique_within)) {
-      rep("all", nrow(design_keys))
-    } else {
-      group_var <- as.character(spec$unique_within[[1]])
-      if (!group_var %in% base::names(design_keys)) {
-        stop(
-          "Covariable '", var_name, "' uses unknown unique_within column: ",
-          group_var
-        )
-      }
-      as.character(design_keys[[group_var]])
-    }
+    group_ids <- as.character(design_keys[["deck"]])
 
     for (rule in spec$conditions) {
       required_keys <- base::names(rule$when)
@@ -181,16 +234,16 @@ assign_covariables <- function(design_lab, design_keys, covariables, lang = NULL
         next
       }
 
-      values <- rule$values
+      pool <- rule$pool
       if (!is.null(lang)) {
-        values <- get_lang(values, lang, fallback = values)
+        pool <- get_lang(pool, lang, fallback = pool)
       }
-      values <- as.character(values)
+      pool <- as.character(pool)
 
       for (group in unique(group_ids[matched])) {
         idx <- which(matched & group_ids == group)
         output[idx] <- draw_values(
-          pool = values,
+          pool = pool,
           n_needed = length(idx),
           randomize = spec$randomize
         )
@@ -226,7 +279,6 @@ prepare_vignettes_single_lang <- function(
   store_design_data = TRUE
 ) {
   vig_vars <- base::names(factors)
-  covariables <- normalize_covariables(covariables = covariables)
 
   if (!is.null(design_df)) {
     required_cols <- c("deck", "vig", vig_vars)
@@ -404,17 +456,15 @@ prepare_vignettes_single_lang <- function(
 
 #' Build vignette data with automatic multi-language detection
 #'
-#' @param factors Named list of factor definitions with multilingual labels
-#' @param design_df Optional data frame with design matrix (columns: deck, vig,
-#'   factor variables coded as integers)
-#' @param vig_n Number of vignettes per deck (required if design_df is NULL)
+#' @param design Optional design matrix as a data frame or list. If `design`
+#'   is a list, it must describe rows or columns including at least `deck` and
+#'   `vig`.
+#' @param content Bundled input as a named list or YAML file path with
+#'   top-level `factors`, `text`, and optional `covariables` entries. No other
+#'   entries are allowed in `content`.
+#' @param vig_n Number of vignettes per deck (required if `design` is NULL)
 #' @param lang Single language code or NULL for auto-detection of all languages
 #' @param prefix Prefix for vignette variable names (default: "vig")
-#' @param text Optional named list of text templates by language
-#' @param covariables Optional named list of dependent vignette attributes.
-#'   Each entry defines conditions over one or more factor variables and a value
-#'   pool to assign. By default, values are randomized without replacement
-#'   within each deck.
 #' @param store_design_data Logical, wheter to store labeled design data for preview
 #'
 #' @return List with structure:
@@ -432,10 +482,12 @@ prepare_vignettes_single_lang <- function(
 #' \dontrun{
 #' # Auto-detect all languages
 #' result <- build_vignette_data(
-#'   factors = fct_per,
-#'   design_df = design_sas,
-#'   text = text_templates,
-#'   covariables = covariables_per,
+#'   design = design_sas,
+#'   content = list(
+#'     factors = fct_per,
+#'     text = text_templates,
+#'     covariables = covariables_per
+#'   )
 #' )
 #'
 #' # Access structure:
@@ -447,22 +499,28 @@ prepare_vignettes_single_lang <- function(
 #'
 #' @export
 build_vignette_data <- function(
-  factors,
-  design_df = NULL,
+  design = NULL,
+  content,
   vig_n = NULL,
   lang = NULL,
   prefix = "vig",
-  text = NULL,
-  covariables = NULL,
   store_design_data = TRUE
 ) {
+  design <- normalize_design(design)
+
+  resolved <- resolve_vignette_content(content = content)
+
+  factors <- resolved$factors
+  text <- resolved$text
+  covariables <- resolved$covariables
+
   # Validate inputs
   if (is.null(factors) || !is.list(factors) || is.null(base::names(factors))) {
     stop("'factors' must be a named list")
   }
 
-  if (is.null(design_df) && is.null(vig_n)) {
-    stop("Either 'design_df' or 'vig_n' must be provided")
+  if (is.null(design) && is.null(vig_n)) {
+    stop("Either 'design' or 'vig_n' must be provided")
   }
 
   covariables <- normalize_covariables(covariables = covariables)
@@ -479,7 +537,7 @@ build_vignette_data <- function(
 
     result <- prepare_vignettes_single_lang(
       factors = factors,
-      design_df = design_df,
+      design_df = design,
       vig_n = vig_n,
       text = text,
       lang = lang,
@@ -510,7 +568,7 @@ build_vignette_data <- function(
     message("No languages detected in factors. Using single-language mode.")
     result <- prepare_vignettes_single_lang(
       factors = factors,
-      design_df = design_df,
+      design_df = design,
       vig_n = vig_n,
       text = text,
       lang = NULL,
@@ -537,7 +595,7 @@ build_vignette_data <- function(
 
     prepare_vignettes_single_lang(
       factors = factors,
-      design_df = design_df,
+      design_df = design,
       vig_n = vig_n,
       text = text,
       lang = l,

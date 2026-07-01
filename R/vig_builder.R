@@ -39,6 +39,37 @@ detect_languages <- function(factors) {
 }
 
 
+#' Helper: Get factor labels for one language
+#' @keywords internal
+get_factor_labels <- function(factor_def, lang = NULL) {
+  purrr::map_chr(factor_def, function(lookup) {
+    if (is.null(lang)) {
+      as.character(lookup)[1]
+    } else {
+      get_lang(lookup, lang, fallback = NA_character_)
+    }
+  })
+}
+
+
+#' Store design dimensions as labelled factors
+#' @keywords internal
+label_design_factors <- function(design_data, design_keys, factors, lang = NULL) {
+  for (var in base::names(factors)) {
+    codes <- base::names(factors[[var]])
+    labels <- get_factor_labels(factors[[var]], lang = lang)
+
+    design_data[[var]] <- factor(
+      as.character(design_keys[[var]]),
+      levels = codes,
+      labels = labels
+    )
+  }
+
+  design_data
+}
+
+
 #' Normalize design input from data frame or list
 #'
 #' @keywords internal
@@ -433,9 +464,11 @@ prepare_vignettes_single_lang <- function(
   )
 
   if (store_design_data) {
+    design_data <- design_lab
+
     # Add vignette specific text (fill ifelse conditions with values)
     if (!is.null(text)) {
-      design_lab <- design_lab |>
+      design_data <- design_data |>
         dplyr::mutate(
           text = get_lang(text, lang) |>
             stringr::str_replace_all("\\{if\\(", "\\{ifelse\\(")
@@ -447,7 +480,12 @@ prepare_vignettes_single_lang <- function(
         dplyr::ungroup()
     }
 
-    result$design_data <- design_lab
+    result$design_data <- label_design_factors(
+      design_data = design_data,
+      design_keys = design_keys,
+      factors = factors,
+      lang = lang
+    )
   }
 
   return(result)
@@ -465,7 +503,9 @@ prepare_vignettes_single_lang <- function(
 #' @param vig_n Number of vignettes per deck (required if `design` is NULL)
 #' @param lang Single language code or NULL for auto-detection of all languages
 #' @param prefix Prefix for vignette variable names (default: "vig")
-#' @param store_design_data Logical, wheter to store labeled design data for preview
+#' @param store_design_data Logical, whether to store design data for preview
+#'   and reuse. Vignette factor columns are stored as labelled R factors using
+#'   the labels from `content$factors`.
 #'
 #' @return List with structure:
 #'   - vigs: number of vignettes
@@ -475,8 +515,15 @@ prepare_vignettes_single_lang <- function(
 #'   - conditions: named list where each element is a list of language codes
 #'     (e.g., conditions$vigper1name$de, conditions$vigper1name$en)
 #'   - texts: named list by language code (e.g., text$de, text$en)
-#'   - design_data: (if store_design_data=TRUE) nested list by language with
-#'     labeled design data for creating previews
+#'   - design_data: (if `store_design_data = TRUE`) nested list by language
+#'     with design data. Vignette dimensions are stored as factors with
+#'     labelled levels; covariables remain character columns.
+#'
+#' @details
+#' `design_data` keeps vignette dimensions as factors rather than plain
+#' character labels. This preserves the numeric factor codes internally while
+#' exposing the configured labels as factor levels, which is useful when
+#' reusing or exporting the design data.
 #'
 #' @examples
 #' \dontrun{

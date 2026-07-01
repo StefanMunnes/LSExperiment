@@ -28,7 +28,9 @@ entries are allowed in \code{content}.}
 
 \item{prefix}{Prefix for vignette variable names (default: "vig")}
 
-\item{store_design_data}{Logical, wheter to store labeled design data for preview}
+\item{store_design_data}{Logical, whether to store design data for preview
+and reuse. Vignette factor columns are stored as labelled R factors using
+the labels from \code{content$factors}.}
 }
 \value{
 List with structure:
@@ -40,12 +42,19 @@ List with structure:
 \item conditions: named list where each element is a list of language codes
 (e.g., conditions$vigper1name$de, conditions$vigper1name$en)
 \item texts: named list by language code (e.g., text$de, text$en)
-\item design_data: (if store_design_data=TRUE) nested list by language with
-labeled design data for creating previews
+\item design_data: (if \code{store_design_data = TRUE}) nested list by language
+with design data. Vignette dimensions are stored as factors with
+labelled levels; covariables remain character columns.
 }
 }
 \description{
 Build vignette data with automatic multi-language detection
+}
+\details{
+\code{design_data} keeps vignette dimensions as factors rather than plain
+character labels. This preserves the numeric factor codes internally while
+exposing the configured labels as factor levels, which is useful when
+reusing or exporting the design data.
 }
 \examples{
 \dontrun{

@@ -9,7 +9,7 @@ previews from structured R objects or YAML-based factor definitions.
 ## What the package does
 
 - stores vignette dimensions and labelled levels in a structured format
-- turns a design table into labelled vignette data
+- turns a design table into vignette data with labelled factor columns
 - supports multi-language labels and text templates
 - creates LimeSurvey-ready condition strings for hidden variables
 - injects vignette content into an existing LimeSeed seed object
@@ -65,6 +65,10 @@ vig <- build_vignette_data(
 
 preview_vignettes(vig, "jobvig-preview.html")
 ```
+
+The stored `design_data` keeps vignette dimensions as R factors with labelled
+levels. For example, `vig$design_data$en$gender` prints as `male` or `female`,
+but still carries the factor codes internally for reuse or export.
 
 ## Dependent covariables
 

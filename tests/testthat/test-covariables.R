@@ -333,3 +333,42 @@ test_that("build_vignette_data rejects unsupported keys in content", {
     "Unexpected entries: prefix"
   )
 })
+test_that("design_data stores vignette dimensions as labelled factors", {
+  factors <- list(
+    gender = list(
+      `1` = c(en = "male", de = "mannlich"),
+      `2` = c(en = "female", de = "weiblich")
+    ),
+    contract = list(
+      `1` = c(en = "permanent contract", de = "unbefristeter Vertrag"),
+      `2` = c(en = "fixed-term contract", de = "befristeter Vertrag")
+    )
+  )
+
+  design_df <- data.frame(
+    deck = c(1, 1),
+    vig = c(1, 2),
+    gender = c(1, 2),
+    contract = c(2, 1)
+  )
+
+  result <- build_vignette_data(
+    design = design_df,
+    content = list(
+      factors = factors,
+      text = "{gender} has a {contract}."
+    ),
+    lang = "en"
+  )
+
+  expect_s3_class(result$design_data$gender, "factor")
+  expect_s3_class(result$design_data$contract, "factor")
+  expect_equal(levels(result$design_data$gender), c("male", "female"))
+  expect_equal(levels(result$design_data$contract), c("permanent contract", "fixed-term contract"))
+  expect_equal(as.integer(result$design_data$gender), c(1L, 2L))
+  expect_equal(as.character(result$design_data$contract), c("fixed-term contract", "permanent contract"))
+  expect_equal(
+    result$design_data$text,
+    c("male has a fixed-term contract.", "female has a permanent contract.")
+  )
+})
